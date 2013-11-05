@@ -2,19 +2,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define ACCELEROMETER_A 2 // Serial Select -> CS on LIS331
-#define ACCELEROMETER_B 4 // Serial Select -> CS on LIS331
-#define MOSI 11 // MasterOutSlaveIn -> SDI
-#define MISO 12 // MasterInSlaveOut -> SDO
 #define SCK 13 // Serial Clock -> SPC on LIS331
+#define MISO 12 // MasterInSlaveOut -> SDO
+#define MOSI 11 // MasterOutSlaveIn -> SDI
+#define FLASH_BUTTON 8 // Pushbutton
+#define ACCELEROMETER_B 4 // Serial Select -> CS on LIS331
+#define ACCELEROMETER_A 2 // Serial Select -> CS on LIS331
 
 #define STRETCH_SENSOR_A A0 // Pin for a stretch sensor
 #define STRETCH_SENSOR_B A2 // Pin for a stretch sensor
 #define FORCE_SENSOR A1 // Pin for force sensor around chest
 #define GSR_SENSOR A3 // Pin for the galvanic skin response
 #define PULSE_SENSOR A4 // Pin for the pulse sensor
-
-#define SCALE 0.0007324; // approximate scale factor for full range (+/-24g)
 
 const int numReadings = 10;
 int index = 0;
@@ -50,6 +49,7 @@ int stretchForceA;
 int stretchForceB;
 int gsrValue;
 int pulseValue;
+int flashButtonValue;
 
 void setup() {
   Serial.begin(9600);
@@ -126,8 +126,6 @@ void loop()
     average2Y = total2Y / numReadings;
     average2Z = total2Z / numReadings;
   }
-  
-//  Serial.println(average1Z);
 
   // Read the force sensor value for breathing
   breathingForce = analogRead(FORCE_SENSOR);
@@ -141,6 +139,18 @@ void loop()
 
   // Read the pulse sensor
   pulseValue = analogRead(PULSE_SENSOR);
+  
+  // Read the flash pushbutton
+  flashButtonValue = digitalRead(FLASH_BUTTON);
+  if (flashButtonValue == HIGH) {
+    // set all the values to their maximum
+    average1X = average1Y = average1Z = 5500;
+    average2X = average2Y = average2Z = 5500;
+    breathingForce = 1023;
+    stretchForceA = stretchForceB = 1023;
+    gsrValue = 1023;
+    pulseValue = 1023;
+  }
 
   delay(1); // delay in between reads for stability
 }
