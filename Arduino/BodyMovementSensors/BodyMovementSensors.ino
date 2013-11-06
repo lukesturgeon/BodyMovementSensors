@@ -15,7 +15,7 @@
 #define GSR_SENSOR A3 // Pin for the galvanic skin response
 #define PULSE_SENSOR A4 // Pin for the pulse sensor
 
-const int numReadings = 10;
+const int numReadings = 20;
 int index = 0;
 
 // smooth the readings from the accelerometer
@@ -55,8 +55,7 @@ void setup() {
   Serial.begin(9600);
 
   // initialize all the readings to 0
-  for (int i = 0; i < numReadings; i++) 
-  {
+  for (int i = 0; i < numReadings; i++) {
     values1X[i] = 0;
     values1Y[i] = 0; 
     values1Z[i] = 0; 
@@ -113,19 +112,18 @@ void loop()
   index = index + 1;
 
   // if we're at the end of the array...
-  if (index >= numReadings)
-  {  
+  if (index >= numReadings) {
     // ...wrap around to the beginning: 
-    index = 0;                           
-
-    // calculate the average:
-    average1X = total1X / numReadings;
-    average1Y = total1Y / numReadings;
-    average1Z = total1Z / numReadings;
-    average2X = total2X / numReadings;
-    average2Y = total2Y / numReadings;
-    average2Z = total2Z / numReadings;
+    index = 0;
   }
+
+  // calculate the average:
+  average1X = total1X / numReadings;
+  average1Y = total1Y / numReadings;
+  average1Z = total1Z / numReadings;
+  average2X = total2X / numReadings;
+  average2Y = total2Y / numReadings;
+  average2Z = total2Z / numReadings;
 
   // Read the force sensor value for breathing
   breathingForce = analogRead(FORCE_SENSOR);
@@ -139,7 +137,7 @@ void loop()
 
   // Read the pulse sensor
   pulseValue = analogRead(PULSE_SENSOR);
-  
+
   // Read the flash pushbutton
   flashButtonValue = digitalRead(FLASH_BUTTON);
   if (flashButtonValue == HIGH) {
@@ -190,4 +188,5 @@ void serialEvent()
     Serial.println(pulseValue, 1);
   } 
 }
+
 
