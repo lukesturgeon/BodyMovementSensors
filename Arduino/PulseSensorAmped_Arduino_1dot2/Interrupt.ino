@@ -27,7 +27,6 @@ void interruptSetup(){
 ISR(TIMER2_COMPA_vect){                         // triggered when Timer2 counts to 124
   cli();                                      // disable interrupts while we do this
   Signal = analogRead(pulsePin);              // read the Pulse Sensor 
-  Signal = map(Signal, 0, 675, 0, 1024);      // THIS WILL MAP A 3.3V SIGNAL TO A 5V SIGNAL
   sampleCounter += 2;                         // keep track of the time in mS with this variable
   int N = sampleCounter - lastBeatTime;       // monitor the time since the last beat to avoid noise
 
