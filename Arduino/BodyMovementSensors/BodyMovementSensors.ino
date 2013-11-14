@@ -1,10 +1,13 @@
 #include <SPI.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <SoftwareSerial.h>
 
 #define SCK 13 // Serial Clock -> SPC on LIS331
 #define MISO 12 // MasterInSlaveOut -> SDO
 #define MOSI 11 // MasterOutSlaveIn -> SDI
+#define BLUETOOTH_TX 9  // TX-O pin of bluetooth module
+#define BLUETOOTH_RX 10  // RX-I pin of bluetooth module
 #define FLASH_BUTTON 8 // Pushbutton
 #define ACCELEROMETER_B 4 // Serial Select -> CS on LIS331
 #define ACCELEROMETER_A 2 // Serial Select -> CS on LIS331
@@ -12,8 +15,8 @@
 #define STRETCH_SENSOR_A A0 // Pin for a stretch sensor
 #define STRETCH_SENSOR_B A2 // Pin for a stretch sensor
 #define FORCE_SENSOR A1 // Pin for force sensor around chest
-#define GSR_SENSOR A3 // Pin for the galvanic skin response
 #define PULSE_SENSOR A4 // Pin for the pulse sensor
+#define GSR_SENSOR A5 // Pin for the galvanic skin response
 
 const int numReadings = 20;
 int index = 0;
@@ -43,7 +46,6 @@ int average2Z = 0;
 // global body movement values
 int xAccA, yAccA, zAccA;
 int xAccB, yAccB, zAccB;
-
 int breathingForce;
 int stretchForceA;
 int stretchForceB;
@@ -51,9 +53,10 @@ int gsrValue;
 int pulseValue;
 int flashButtonValue;
 
-void setup() {
-  Serial.begin(9600);
+// setup bluetooth serial connection using Software
+SoftwareSerial bluetooth(BLUETOOTH_TX, BLUETOOTH_RX);
 
+void setup() {
   // initialize all the readings to 0
   for (int i = 0; i < numReadings; i++) {
     values1X[i] = 0;
@@ -71,8 +74,17 @@ void setup() {
   accelerometerSetup(ACCELEROMETER_A);
   accelerometerSetup(ACCELEROMETER_B);
 
-  // Tell the world we are ready
-  Serial.println("OK");
+  bluetooth.begin(115200);  // The Bluetooth Mate defaults to 115200bps
+  bluetooth.print("$");  // Print three times individually
+  bluetooth.print("$");
+  bluetooth.print("$");  // Enter command mode
+  delay(100);  // Short delay, wait for the Mate to send back CMD
+  bluetooth.println("U,9600,N");  // Temporarily Change the baudrate to 9600, no parity
+  // 115200 can be too fast at times for NewSoftSerial to relay the data reliably
+  bluetooth.begin(9600);  // Start bluetooth serial at 9600
+
+    // Tell the world we are ready
+  bluetooth.println("OK");
 }
 
 
@@ -149,50 +161,51 @@ void loop()
     gsrValue = 1023;
     pulseValue = 1023;
   }
-  
-  delay(1); // delay in between reads for stability
-}
 
-void serialEvent() 
-{
-  // print out ALL sensor values
-  byte inbyte = Serial.read();
-  if(inbyte == 'a')
-  {
-    sendData();
-  } 
+  // If the bluetooth sent any characters
+  if(bluetooth.available()) {
+    // Send any characters the bluetooth prints to the serial monitor
+    char inbyte = bluetooth.read();
+    if (inbyte == 'a') {
+      sendData();
+    } 
+  }
+
+  delay(1); // delay in between reads for stability
 }
 
 void sendData() 
 {
   // ACCELEROMETER A [x, y, z]
   // mapped the values from the sensor min/max = 5500 to 0-1023
-  Serial.print(map(average1X, -5500, 5500, 0, 1023));
-  Serial.print(",");
-  Serial.print(map(average1Y, -5500, 5500, 0, 1023));
-  Serial.print(",");
-  Serial.print(map(average1Z, -5500, 5500, 0, 1023));
-  Serial.print(",");
+  bluetooth.print(map(average1X, -5500, 5500, 0, 1023));
+  bluetooth.print(",");
+  bluetooth.print(map(average1Y, -5500, 5500, 0, 1023));
+  bluetooth.print(",");
+  bluetooth.print(map(average1Z, -5500, 5500, 0, 1023));
+  bluetooth.print(",");
   // ACCELEROMETER B [x, y, z]
-  Serial.print(map(average2X, -5500, 5500, 0, 1023));
-  Serial.print(",");
-  Serial.print(map(average2Y, -5500, 5500, 0, 1023));
-  Serial.print(",");
-  Serial.print(map(average2Z, -5500, 5500, 0, 1023));
+  bluetooth.print(map(average2X, -5500, 5500, 0, 1023));
+  bluetooth.print(",");
+  bluetooth.print(map(average2Y, -5500, 5500, 0, 1023));
+  bluetooth.print(",");
+  bluetooth.print(map(average2Z, -5500, 5500, 0, 1023));
   // BREATHING [n]
-  Serial.print(",");
-  Serial.print(breathingForce, 1);
+  bluetooth.print(",");
+  bluetooth.print(breathingForce, 1);
   // STRETCH [a, b]
-  Serial.print(",");
-  Serial.print(stretchForceA, 1);
-  Serial.print(",");
-  Serial.print(stretchForceB, 1);
+  bluetooth.print(",");
+  bluetooth.print(stretchForceA, 1);
+  bluetooth.print(",");
+  bluetooth.print(stretchForceB, 1);
   // GALVANIC SKIN RESPONSE
-  Serial.print(",");
-  Serial.print(gsrValue, 1);
+  bluetooth.print(",");
+  bluetooth.print(gsrValue, 1);
   // PULSE
-  Serial.print(",");  
-  Serial.println(pulseValue, 1);
+  bluetooth.print(",");  
+  bluetooth.println(pulseValue, 1);
 }
+
+
 
 
