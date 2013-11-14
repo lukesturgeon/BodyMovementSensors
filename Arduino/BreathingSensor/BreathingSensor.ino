@@ -5,7 +5,7 @@ void setup()
 
 void loop()
 {
-  int a = analogRead(A0);
+  int a = analogRead(A5);
 // Serial.println(a);
 
   if ( Serial.available() > 0 ) 
