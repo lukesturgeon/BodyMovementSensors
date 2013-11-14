@@ -3,8 +3,8 @@ void setup() {
 }
 
 void loop() {
-  int a = analogRead(A0);
-  Serial.println(a);
+  int a = analogRead(A4);
+//  Serial.println(a);
   
   // wait and listen for an 'a' from Processing
   // before sending the next data
