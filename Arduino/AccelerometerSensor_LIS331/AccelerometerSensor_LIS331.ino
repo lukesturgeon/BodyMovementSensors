@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define SS 10 // Serial Select -> CS on LIS331
+#define SS 3 // Serial Select -> CS on LIS331
 #define MOSI 11 // MasterOutSlaveIn -> SDI
 #define MISO 12 // MasterInSlaveOut -> SDO
 #define SCK 13 // Serial Clock -> SPC on LIS331
