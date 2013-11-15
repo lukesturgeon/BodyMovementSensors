@@ -1,17 +1,24 @@
-// 3-axis Accelerometer
-// Sparkfun Electronics Triple Axis Accelerometer Breakout - LIS331
-// Arduino UNO
-
-/* Wiring:
- UNO LIS331
- 
- 3.3V VCC
- GND GND
- 10 CS 
- 11 SDA/SDI
- 12 SA0/SDO
- 13 SCL/SPC
+/**
+ * X3-axis Accelerometer sketch for testing
+ * 
+ * By: Luke Sturgeon
+ * Email: hello@lukesturgeon.co.uk
+ * Date: 15 November 2013
+ * License: Public domain
+ * 
+ * Sparkfun Electronics Triple Axis Accelerometer Breakout - LIS331
+ * 
+ * Wiring:
+ * UNO    LIS331
+ * 
+ * 3.3V   VCC
+ * GND    GND
+ * 10     CS 
+ * 11     SDA/SDI
+ * 12     SA0/SDO
+ * 13     SCL/SPC
  */
+
 
 #include <SPI.h>
 #include <stdlib.h>
@@ -99,9 +106,9 @@ void readVal()
   yAcc = yVal * SCALE;
   zAcc = zVal * SCALE;
 
-//  xAcc = xVal / 1024;
-//  yAcc = yVal / 1024;
-//  zAcc = zVal / 1024;
+  //  xAcc = xVal / 1024;
+  //  yAcc = yVal / 1024;
+  //  zAcc = zVal / 1024;
 }
 
 void SPI_SETUP()
@@ -203,5 +210,6 @@ void Accelerometer_Setup()
   delay(1);
   digitalWrite(SS, HIGH);
 }
+
 
 

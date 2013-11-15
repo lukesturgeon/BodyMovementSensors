@@ -1,3 +1,20 @@
+/**
+ * BodyMovemnetSensors
+ * 
+ * By: Luke Sturgeon
+ * Email: hello@lukesturgeon.co.uk
+ * Date: 15 November 2013
+ * License: Public domain
+ * 
+ * This sketch reads values from many different sensors mounted
+ * on a persons body. The values are stored and broadcast over Serial.
+ * 
+ * This sketch uses SoftwareSerial to communicate through a Bluetooth
+ * device rather than USB serial.
+ * 
+ * https://www.sparkfun.com/products/10269
+ */
+
 #include <SPI.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -205,6 +222,8 @@ void sendData()
   bluetooth.print(",");  
   bluetooth.println(pulseValue, 1);
 }
+
+
 
 
 
