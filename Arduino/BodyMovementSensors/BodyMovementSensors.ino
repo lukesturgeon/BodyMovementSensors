@@ -90,6 +90,9 @@ void setup() {
   // Configure accelerometer
   accelerometerSetup(ACCELEROMETER_A);
   accelerometerSetup(ACCELEROMETER_B);
+  
+  // Also setup standard serial for debugging
+  Serial.begin(9600);
 
   bluetooth.begin(115200);  // The Bluetooth Mate defaults to 115200bps
   bluetooth.print("$");  // Print three times individually
@@ -102,6 +105,7 @@ void setup() {
 
     // Tell the world we are ready
   bluetooth.println("OK");
+  Serial.println("OK");
 }
 
 
@@ -184,14 +188,23 @@ void loop()
     // Send any characters the bluetooth prints to the serial monitor
     char inbyte = bluetooth.read();
     if (inbyte == 'a') {
-      sendData();
+      sendBluetoothData();
+    } 
+  }
+  
+  // If the USB sent any characters
+  if(Serial.available()) {
+    // Send any characters the bluetooth prints to the serial monitor
+    char inbyte = Serial.read();
+    if (inbyte == 'a') {
+      sendUSBData();
     } 
   }
 
   delay(1); // delay in between reads for stability
 }
 
-void sendData() 
+void sendBluetoothData() 
 {
   // ACCELEROMETER A [x, y, z]
   // mapped the values from the sensor min/max = 5500 to 0-1023
@@ -223,6 +236,37 @@ void sendData()
   bluetooth.println(pulseValue, 1);
 }
 
+void sendUSBData() 
+{
+  // ACCELEROMETER A [x, y, z]
+  // mapped the values from the sensor min/max = 5500 to 0-1023
+  Serial.print(map(average1X, -5500, 5500, 0, 1023));
+  Serial.print(",");
+  Serial.print(map(average1Y, -5500, 5500, 0, 1023));
+  Serial.print(",");
+  Serial.print(map(average1Z, -5500, 5500, 0, 1023));
+  Serial.print(",");
+  // ACCELEROMETER B [x, y, z]
+  Serial.print(map(average2X, -5500, 5500, 0, 1023));
+  Serial.print(",");
+  Serial.print(map(average2Y, -5500, 5500, 0, 1023));
+  Serial.print(",");
+  Serial.print(map(average2Z, -5500, 5500, 0, 1023));
+  // BREATHING [n]
+  Serial.print(",");
+  Serial.print(breathingForce, 1);
+  // STRETCH [a, b]
+  Serial.print(",");
+  Serial.print(stretchForceA, 1);
+  Serial.print(",");
+  Serial.print(stretchForceB, 1);
+  // GALVANIC SKIN RESPONSE
+  Serial.print(",");
+  Serial.print(gsrValue, 1);
+  // PULSE
+  Serial.print(",");  
+  Serial.println(pulseValue, 1);
+}
 
 
 
