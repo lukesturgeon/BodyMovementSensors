@@ -1,205 +1,159 @@
-/**
- * GSR sensor code from Tom Keene < tom@theanthillsocial.co.uk>
- *
- * Taken from – http://www.theanthillsocial.co.uk/sketch/163
- *
- * Originally from – http://cwwang.com/2008/04/13/gsr-reader/
- */
-
+import controlP5.*;
 import processing.serial.*;
-Serial myPort;  
 
-int hPosition = 1;     // the horizontal position on the graph
-float currentReading;
-float lastReading;
-int count=0;
-int zeroLinePos=0;
+String TIME_COLUMN = "time";
+String DATA_COLUMN = "nervous";
 
-float gsrAverage, prevGsrAverage;
-float baseLine=0;
-long lastFlatLine=0;
-color graphColor=color(255, 255, 255);
-int baselineTimer=10000;
-int gsrValue;
-int gsrZeroCount=0;
-float gsrRange=0;
-int downhillCount=0;
-int uphillCount=0;
-boolean downhill;
-boolean peaked=false;
-float peak, valley;
+Table table;
+Serial bluetooth;
+ControlP5 cp5;
+Range preview_range;
+int[] preview_data;
+int time_now, time_last;
+int start_recording;
+boolean recording;
 
-ArrayList<Integer> grsValues;
-ArrayList<Integer> grsAverages;
+void setup() {
+  size(400, 200);
+  strokeWeight(2);
 
-void setup () {
-  size(640, 480);
+  // Create variables
+  preview_data = new int[width];
+  time_now = 0;
+  time_last = 0;
+  recording = false;
 
-  grsValues = new ArrayList<Integer>();
-  grsAverages = new ArrayList<Integer>();
+  // Create a table to record the data
+  table = new Table();
+  table.addColumn(TIME_COLUMN, Table.LONG);
+  table.addColumn(DATA_COLUMN, Table.INT);
 
-  myPort = new Serial(this, Serial.list()[9], 9600);
-  currentReading=0;
-  lastReading=0;
-  gsrAverage=0;
-  background(0);
+  // Create the UI control using ControlP5
+  cp5 = new ControlP5(this);
+  preview_range = cp5.addRange("preview")
+    // disable broadcasting since setRange and setRangeValues will trigger an event
+    .setBroadcast(false) 
+      .setPosition(10, 10)
+        .setSize(100, 14)
+          .setColorCaptionLabel(color(0))
+            .setHandleSize(10)
+              .setRange(0, 1023)
+                .setRangeValues(0, 1023)
+                  // after the initialization we turn broadcast back on again
+                  .setBroadcast(true);
 
-  smooth();
+  // Print out a list of all available Serial ports
+  println(Serial.list());
+
+  // Connect to the Arduino via the Bluetooth serial port
+  bluetooth = new Serial(this, Serial.list()[8], 9600);
+  bluetooth.bufferUntil('\n');
 }
 
-void draw () {
-  //best delay setting for gsr readings
-  delay(50);
-  //image(myMovie, 0, 0);
+void draw() 
+{
+  // clear the display
+  background(255);
 
-  int gsrThreshold = 15;
+  float high = preview_range.getHighValue();
+  float low = preview_range.getLowValue();
 
-  if ( gsrValue <gsrThreshold && gsrValue >- gsrThreshold ) {
-    if ( gsrZeroCount > 10 ) {
-      currentReading=0;//flatline
-      gsrAverage=0;
-      baseLine=0;
-      lastFlatLine=millis();
-      gsrZeroCount=0;
-      // println("reset");
-    }
-    gsrZeroCount++;
-  } else {
-    currentReading=gsrValue-baseLine;
-    gsrZeroCount=0;
-  }
-
-  if (millis()-lastFlatLine>baselineTimer) {
-    baseLine=gsrAverage;
-  }
-
-  //graph colors
-  if (gsrAverage>0 && gsrAverage<height/2.0*.25) graphColor=color(255, 255, 255); else if (gsrAverage>height/2.0*.25 && gsrAverage<height/2.0*.5) graphColor=color(255, 250, 100); else if (gsrAverage>height/2.0*.5 && gsrAverage<height/2.0*.75) graphColor=color(255, 250, 0); else if (gsrAverage>height/2.0*.75) graphColor=color(255, 100, 0);
-
-  gsrRange=peak-valley;
-
-  // at the edge of the screen, go back to the beginning:
-  if (hPosition >= width) {
-    hPosition = 0;
-
-    // cover last drawing
-    fill(0, 200);
-    noStroke();
-    rect(0, 0, width, height);
-  } else 
-  {
-    hPosition += 2;
-  }
-
-  gsrAverage=smooth(currentReading, .97, gsrAverage);
-
-  //draw stuff
-
-  //spike
-  noStroke();
-  if (gsrRange>200) {
-    fill(255);
-    ellipse(10, 10, 20, 20);
-  } else {
-    fill(0);
-    ellipse(10, 10, 20, 20);
-  }
-
-  //graph
-  strokeWeight(2);
-  stroke(graphColor);
-  line(hPosition-1, height/2 - lastReading, hPosition, height/2 - currentReading);
-  stroke(255, 0, 100);
-  line(hPosition-1, height/2 - prevGsrAverage, hPosition, height/2 - gsrAverage);
-
-  //draw peaks
-  int thres=7;
-
+  // draw the preview data in the form of a line graph
   noFill();
-  stroke(255, 0, 0);
-  strokeWeight(2);
-
-  if (currentReading-thres>lastReading&& peaked==true) {
-    downhill=false;
-    //println(downhillCount);
-    uphillCount++;
-    downhillCount=0;
-    point(hPosition-1, height/2.0-lastReading);
-    valley=lastReading;
-    peaked=false;
+  stroke(255, 0, 255);
+  beginShape();
+  for ( int i = 0; i < preview_data.length; i++ ) {    
+    vertex( i, map(preview_data[i], low, high, 0, height));
   }
-  if (currentReading+thres<lastReading && peaked==false) {
-    //println(uphillCount);
-    downhill=true;
-    uphillCount=0;
-    downhillCount++;
-    point(hPosition-1, height/2.0-lastReading);
-    peak=lastReading;
-    peaked=true;
-  }
+  endShape();
 
-  fill(0);
+  // draw text on screen to debug (show us the current highest and lowest values)
   noStroke();
-  rect(0, height-40, 100, 40);
+  fill(0);
+  text("MIN VALUE: " + min(preview_data) + " / MAX VALUE: " + max(preview_data), 10, height-40);
+  text("STATUS: " + ((recording) ? "RECORDING" : "READY"), 10, height-24);
+  text("BEGIN RECORDING = 'B' / END RECORDING = 'E'", 10, height-8);
 
-  fill(255);
-  //  text("value = " + gsrValue, 0, height-10);
+  // create a timer to record the data at a comfortable speed 
+  // regardless of this sketch's frameRate. Bluetooth sometimes 
+  // has latency problems and is slow.
+  time_now = millis();
+  if (time_now - time_last > 100) {
+    // Send a byte to ask the Arduino to send more data  
+    bluetooth.write('a');
 
-  prevGsrAverage = gsrAverage;
-  lastReading = currentReading;
-
-  // save the data
-  grsValues.add(int(currentReading));
-  grsAverages.add(int(gsrAverage));
-
-  //send 'a' for more bytes
-  myPort.write('a');
+    // update the timer to start counting again
+    time_last = time_now;
+  }
 }
 
-void serialEvent (Serial myPort) {
-  int inByte=myPort.read();
-  //0-255
-  gsrValue=inByte;
-  println(inByte);
-}
+void serialEvent( Serial _port) 
+{
+  // Get the number from the Arduino, I use String so the full
+  // value is received and the number isn't misinterpreted by Processing
+  // somethings bytes (ie. '\n') will come through as an int.
+  String s = _port.readStringUntil('\n');
 
-void keyPressed() {
+  // Make sure the string contains real numbers
+  if ( s != null ) 
+  {
+    // Convert the string to an int datatype
+    // Make sure you trim() the string otherwise you may get the wrong value
+    int n = Integer.parseInt(trim(s));
 
-  if (keyCode == DOWN)
-  {
-    zeroLinePos += 3;
-  }
-  if (keyCode == UP)
-  {
-    zeroLinePos -= 3;
-  }
-  if (key == ' ')
-  {
-    background(0);
-  }
-  if (key == 's') 
-  {
-    println("save the data");
-    String[] lines = new String[grsValues.size()];
-    for (int i = 0; i < grsValues.size(); i++) {
-      lines[i] = str(grsValues.get(i)) + "\t" + str(grsAverages.get(i));
+    // move all the values in the preview array down by 1
+    for ( int i = 1; i < preview_data.length; i++ ) 
+    {
+      preview_data[i-1] = preview_data[i];
     }
-    saveStrings("data"+ millis() +".csv", lines);
-    println(grsValues.size());
-  }
 
-  strokeWeight(1);
-  stroke(255, 0, 0);
-  line(0, zeroLinePos, 2, zeroLinePos);
+    // add the new value to the end of the preview array
+    preview_data[preview_data.length-1] = n;
+
+    // check and record the data to the table
+    if (recording == true) 
+    {
+      TableRow row = table.addRow();
+      row.setLong(TIME_COLUMN, millis() - start_recording);
+      row.setInt(DATA_COLUMN, n);
+    }
+  }
 }
 
-int smooth(float data, float filterVal, float smoothedVal) {
-  if (filterVal > 1) {      // check to make sure param's are within range
-    filterVal = .99;
-  } else if (filterVal <= 0) {
-    filterVal = 0;
+void keyPressed() 
+{
+  if (key == 'B' && recording == false) 
+  {
+    // change the flag so we start recording data in serialEvent()
+    // new data is added to the Table as a single row
+    recording = true;
+    // remember when we started recording, to offset the time values in the data
+    start_recording = millis();
+    println("start recording");
+  } 
+  else if (key == 'E' && recording == true)
+  {
+    // change the flag so we STOP recording data in the serialEvent()
+    recording = false;
+
+    // get the current time and format so they're all 2 digits (ie. '1' == '01')
+    String d = nf(day(), 2);
+    String m = nf(month(), 2);
+    String y = nf(year(), 2);
+    String hr = nf(hour(), 2);
+    String min = nf(minute(), 2);
+
+    // Create a unique filename using the dates and times above
+    String filename = y + m + d + "-" + hr + min;
+
+    // and we save all the rows in the Table
+    saveTable(table, "data/" + filename + ".csv");
+
+    // output the result so we now how much data has been saved
+    println("end recording, " + table.getRowCount() + " rows");
+
+    // clear the table so we can record data again without restarting the sketch
+    table.clearRows();
   }
-  smoothedVal = (data * (1 - filterVal)) + (smoothedVal  *  filterVal);
-  return (int)smoothedVal;
 }
 
