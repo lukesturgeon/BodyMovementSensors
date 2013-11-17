@@ -26,7 +26,11 @@ SoftwareSerial bluetooth(BLUETOOTH_TX, BLUETOOTH_RX);
 // Store the current sensor value
 int sensor_value = 0;
 
-void setup() {  
+void setup() {
+  
+  // Setup a standard USB serial connection
+  Serial.begin(9600);
+  
   // The Bluetooth Mate defaults to 115200bps
   bluetooth.begin(115200);
 
@@ -55,11 +59,19 @@ void loop() {
 
   // If the bluetooth connection received any characters
   if(bluetooth.available()) {
-    // Send any characters the bluetooth prints to the serial monitor
     char in_byte = bluetooth.read();
     if (in_byte == 'a') {
       // Broadcast the sensor data
       bluetooth.println(sensor_value);
+    } 
+  }
+  
+  // If the USB connection received any characters
+  if(Serial.available()) {
+    char in_byte = Serial.read();
+    if (in_byte == 'a') {
+      // Broadcast the sensor data
+      Serial.println(sensor_value);
     } 
   }
 
